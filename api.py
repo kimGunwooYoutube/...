@@ -18,6 +18,9 @@ import psutil
 from multiprocessing import Manager, Lock
 app = Flask(__name__)
 
+global_process_count = Value('i', 0)   # 프로세스 간 공유
+active_attacks = {}                     # 공격 ID → 프로세스 리스트
+
 # ========== attack tracking ==========
 active_attacks = {}  # {attack_id: [process1, process2, ...]}
 
@@ -77,7 +80,7 @@ class LoadMonitor:
         self.update()
         return {
             "cpu_percent": self.cpu_percent,
-            "total_processes": global_process_count.value,
+            "total_processes": global_process_count.value,  # 수정
             "active_attacks": len(active_attacks),
             "memory_gb": psutil.virtual_memory().used / (1024**3),
         }
@@ -86,10 +89,12 @@ load_monitor = LoadMonitor()
 
 
 def inc_process_count(delta=1):
+    global global_process_count
     with global_process_lock:
         global_process_count.value += delta
 
 def dec_process_count(delta=1):
+    global global_process_count
     with global_process_lock:
         global_process_count.value -= delta
 
@@ -1499,12 +1504,9 @@ def panel_shell():
     except Exception as e:
         return jsonify({'error': str(e)})
 def main():
-    global manager
-    global active_attacks
-    global global_process_count
-    manager = Manager()
-    active_attacks = manager.dict()     # 기존 dict 대신 manager.dict()로 교체 (선택)
-    global_process_count = manager.Value('i', 0)
+    # global manager, active_attacks, global_process_count  <-- 필요 없음
+    # manager = Manager()  <-- Manager는 더 이상 사용하지 않음
+    # global_process_count = manager.Value('i', 0)  <-- 제거
     app.run(host='0.0.0.0', port=5001, debug=False, threaded=True)
 
 @app.route('/api/status', methods=['GET'])
