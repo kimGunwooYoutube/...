@@ -15,7 +15,7 @@ from flask import Flask, request, jsonify
 import multiprocessing
 import requests
 import psutil
-from multiprocessing import Manager, Lock
+from multiprocessing import Manager, Lock, Value 
 app = Flask(__name__)
 
 global_process_count = Value('i', 0)   # 프로세스 간 공유
